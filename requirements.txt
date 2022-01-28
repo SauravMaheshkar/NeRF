@@ -1,6 +1,6 @@
 black==21.12b0
 flake8==4.0.1
-flax==0.3.6
+flax==0.4.0
 jax[cuda11_cudnn82] -f https://storage.googleapis.com/jax-releases/jax_releases.html
 opencv-python==4.5.5.62
 Pillow==9.0.0

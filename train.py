@@ -28,7 +28,9 @@ from absl import app, flags
 from flax.metrics import tensorboard
 from flax.training import checkpoints
 from jax import config, random
-from jaxnerf.nerf import datasets, models, utils
+
+import wandb
+from nerf import datasets, models, utils
 
 FLAGS = flags.FLAGS
 
@@ -202,6 +204,11 @@ def main(unused_argv):
         # only use host 0 to record results.
         if jax.host_id() == 0:
             if step % FLAGS.print_every == 0:
+                wandb.log({"Train Loss": stats.loss[0]}, step)
+                wandb.log({"Train PSNR": stats.psnr[0]}, step)
+                wandb.log({"Train Loss Coarse": stats.loss_c[0]}, step)
+                wandb.log({"Train PSNR Coarse": stats.psnr_c[0]}, step)
+                wandb.log({"L2 Weight": stats.weight_l2[0]}, step)
                 summary_writer.scalar("train_loss", stats.loss[0], step)
                 summary_writer.scalar("train_psnr", stats.psnr[0], step)
                 summary_writer.scalar("train_loss_coarse", stats.loss_c[0], step)
@@ -210,12 +217,17 @@ def main(unused_argv):
                 avg_loss = np.mean(np.concatenate([s.loss for s in stats_trace]))
                 avg_psnr = np.mean(np.concatenate([s.psnr for s in stats_trace]))
                 stats_trace = []
+                wandb.log({"Average Training Loss": avg_loss}, step)
+                wandb.log({"Average Training PSNR": avg_psnr}, step)
+                wandb.log({"Learning Rate": lr}, step)
                 summary_writer.scalar("train_avg_loss", avg_loss, step)
                 summary_writer.scalar("train_avg_psnr", avg_psnr, step)
                 summary_writer.scalar("learning_rate", lr, step)
                 steps_per_sec = FLAGS.print_every / (time.time() - t_loop_start)
                 reset_timer = True
                 rays_per_sec = FLAGS.batch_size * steps_per_sec
+                wandb.log({"Training Steps per sec": steps_per_sec}, step)
+                wandb.log({"Training Rays per sec": rays_per_sec}, step)
                 summary_writer.scalar("train_steps_per_sec", steps_per_sec, step)
                 summary_writer.scalar("train_rays_per_sec", rays_per_sec, step)
                 precision = int(np.ceil(np.log10(FLAGS.max_steps))) + 1
@@ -261,8 +273,15 @@ def main(unused_argv):
                 eval_time = time.time() - t_eval_start
                 num_rays = jnp.prod(jnp.array(test_case["rays"].directions.shape[:-1]))
                 rays_per_sec = num_rays / eval_time
+                wandb.log({"Testing Rays per sec": rays_per_sec}, step)
                 summary_writer.scalar("test_rays_per_sec", rays_per_sec, step)
                 print(f"Eval {step}: {eval_time:0.3f}s., {rays_per_sec:0.0f} rays/sec")
+                wandb.log({"Testing PSNR": psnr}, step)
+                wandb.log({"Testing SSIM": ssim}, step)
+                wandb.log({"Testing Prediction Color": pred_color}, step)
+                wandb.log({"Testing Prediction Display": pred_disp}, step)
+                wandb.log({"Testing Prediction Accuracy": pred_acc}, step)
+                wandb.log({"Testing Target": test_case["pixels"]}, step)
                 summary_writer.scalar("test_psnr", psnr, step)
                 summary_writer.scalar("test_ssim", ssim, step)
                 summary_writer.image("test_pred_color", pred_color, step)
@@ -278,4 +297,6 @@ def main(unused_argv):
 
 
 if __name__ == "__main__":
+    wandb.init(project="NeRF")
+    wandb.config.update(flags.FLAGS)
     app.run(main)

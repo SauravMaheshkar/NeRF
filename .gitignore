@@ -5,8 +5,10 @@
 .pytest_cache/
 .mypy_cache/
 
-data/
-models/
-notebooks/
+venv/
+logs/
+wandb/
+nerf_llff_data/
+nerf_synthetic/
 
 **/.DS_Store

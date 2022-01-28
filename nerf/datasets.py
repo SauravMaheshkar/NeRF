@@ -24,8 +24,9 @@ from os import path
 import cv2  # pylint: disable=g-import-not-at-top
 import jax
 import numpy as np
-from jaxnerf.nerf import utils
 from PIL import Image
+
+import nerf.utils
 
 
 def get_dataset(split, args):
@@ -89,9 +90,9 @@ class Dataset(threading.Thread):
         """
         x = self.queue.get()
         if self.split == "train":
-            return utils.shard(x)
+            return nerf.utils.shard(x)
         else:
-            return utils.to_device(x)
+            return nerf.utils.to_device(x)
 
     def peek(self):
         """Peek at the next training batch or test example without dequeuing it.
@@ -101,9 +102,9 @@ class Dataset(threading.Thread):
         """
         x = self.queue.queue[0].copy()  # Make a copy of the front of the queue.
         if self.split == "train":
-            return utils.shard(x)
+            return nerf.utils.shard(x)
         else:
-            return utils.to_device(x)
+            return nerf.utils.to_device(x)
 
     def run(self):
         if self.split == "train":
@@ -125,12 +126,12 @@ class Dataset(threading.Thread):
         if args.batching == "all_images":
             # flatten the ray and image dimension together.
             self.images = self.images.reshape([-1, 3])
-            self.rays = utils.namedtuple_map(
+            self.rays = nerf.utils.namedtuple_map(
                 lambda r: r.reshape([-1, r.shape[-1]]), self.rays
             )
         elif args.batching == "single_image":
             self.images = self.images.reshape([-1, self.resolution, 3])
-            self.rays = utils.namedtuple_map(
+            self.rays = nerf.utils.namedtuple_map(
                 lambda r: r.reshape([-1, self.resolution, r.shape[-1]]), self.rays
             )
         else:
@@ -151,14 +152,14 @@ class Dataset(threading.Thread):
                 0, self.rays[0].shape[0], (self.batch_size,)
             )
             batch_pixels = self.images[ray_indices]
-            batch_rays = utils.namedtuple_map(lambda r: r[ray_indices], self.rays)
+            batch_rays = nerf.utils.namedtuple_map(lambda r: r[ray_indices], self.rays)
         elif self.batching == "single_image":
             image_index = np.random.randint(0, self.n_examples, ())
             ray_indices = np.random.randint(
                 0, self.rays[0][0].shape[0], (self.batch_size,)
             )
             batch_pixels = self.images[image_index][ray_indices]
-            batch_rays = utils.namedtuple_map(
+            batch_rays = nerf.utils.namedtuple_map(
                 lambda r: r[image_index][ray_indices], self.rays
             )
         else:
@@ -173,11 +174,13 @@ class Dataset(threading.Thread):
         self.it = (self.it + 1) % self.n_examples
 
         if self.render_path:
-            return {"rays": utils.namedtuple_map(lambda r: r[idx], self.render_rays)}
+            return {
+                "rays": nerf.utils.namedtuple_map(lambda r: r[idx], self.render_rays)
+            }
         else:
             return {
                 "pixels": self.images[idx],
-                "rays": utils.namedtuple_map(lambda r: r[idx], self.rays),
+                "rays": nerf.utils.namedtuple_map(lambda r: r[idx], self.rays),
             }
 
     # TODO(bydeng): Swap this function with a more flexible camera model.
@@ -205,7 +208,7 @@ class Dataset(threading.Thread):
             self.camtoworlds[:, None, None, :3, -1], directions.shape
         )
         viewdirs = directions / np.linalg.norm(directions, axis=-1, keepdims=True)
-        self.rays = utils.Rays(
+        self.rays = nerf.utils.Rays(
             origins=origins, directions=directions, viewdirs=viewdirs
         )
 
@@ -217,7 +220,7 @@ class Blender(Dataset):
         """Load images from disk."""
         if args.render_path:
             raise ValueError("render_path cannot be used for the blender dataset.")
-        with utils.open_file(
+        with nerf.utils.open_file(
             path.join(args.data_dir, "transforms_{}.json".format(self.split)), "r"
         ) as fp:
             meta = json.load(fp)
@@ -226,7 +229,7 @@ class Blender(Dataset):
         for i in range(len(meta["frames"])):
             frame = meta["frames"][i]
             fname = os.path.join(args.data_dir, frame["file_path"] + ".png")
-            with utils.open_file(fname, "rb") as imgin:
+            with nerf.utils.open_file(fname, "rb") as imgin:
                 image = np.array(Image.open(imgin), dtype=np.float32) / 255.0
                 if args.factor == 2:
                     [halfres_h, halfres_w] = [hw // 2 for hw in image.shape[:2]]
@@ -268,22 +271,24 @@ class LLFF(Dataset):
         else:
             factor = 1
         imgdir = path.join(args.data_dir, "images" + imgdir_suffix)
-        if not utils.file_exists(imgdir):
+        if not nerf.utils.file_exists(imgdir):
             raise ValueError("Image folder {} doesn't exist.".format(imgdir))
         imgfiles = [
             path.join(imgdir, f)
-            for f in sorted(utils.listdir(imgdir))
+            for f in sorted(nerf.utils.listdir(imgdir))
             if f.endswith("JPG") or f.endswith("jpg") or f.endswith("png")
         ]
         images = []
         for imgfile in imgfiles:
-            with utils.open_file(imgfile, "rb") as imgin:
+            with nerf.utils.open_file(imgfile, "rb") as imgin:
                 image = np.array(Image.open(imgin), dtype=np.float32) / 255.0
                 images.append(image)
         images = np.stack(images, axis=-1)
 
         # Load poses and bds.
-        with utils.open_file(path.join(args.data_dir, "poses_bounds.npy"), "rb") as fp:
+        with nerf.utils.open_file(
+            path.join(args.data_dir, "poses_bounds.npy"), "rb"
+        ) as fp:
             poses_arr = np.load(fp)
         poses = poses_arr[:, :-2].reshape([-1, 3, 5]).transpose([1, 2, 0])
         bds = poses_arr[:, -2:].transpose([1, 0])
@@ -359,7 +364,7 @@ class LLFF(Dataset):
             ndc_origins, ndc_directions = convert_to_ndc(
                 self.rays.origins, self.rays.directions, self.focal, self.w, self.h
             )
-            self.rays = utils.Rays(
+            self.rays = nerf.utils.Rays(
                 origins=ndc_origins,
                 directions=ndc_directions,
                 viewdirs=self.rays.viewdirs,
@@ -370,8 +375,8 @@ class LLFF(Dataset):
             self.camtoworlds = self.camtoworlds[n_render_poses:]
             split = [np.split(r, [n_render_poses], 0) for r in self.rays]
             split0, split1 = zip(*split)
-            self.render_rays = utils.Rays(*split0)
-            self.rays = utils.Rays(*split1)
+            self.render_rays = nerf.utils.Rays(*split0)
+            self.rays = nerf.utils.Rays(*split1)
 
     def _recenter_poses(self, poses):
         """Recenter poses according to the original NeRF code."""
@@ -510,7 +515,4 @@ class LLFF(Dataset):
         return poses_reset
 
 
-dataset_dict = {
-    "blender": Blender,
-    "llff": LLFF,
-}
+dataset_dict = {"blender": Blender, "llff": LLFF}

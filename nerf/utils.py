@@ -26,10 +26,11 @@ import jax.scipy as jsp
 import numpy as np
 import yaml
 from absl import flags
-from jaxnerf.nerf import datasets
 from PIL import Image
 
-BASE_DIR = "jaxnerf"
+import nerf.datasets
+
+BASE_DIR = "."
 INTERNAL = False
 
 
@@ -66,7 +67,7 @@ def define_flags():
     flags.DEFINE_enum(
         "dataset",
         "blender",
-        list(k for k in datasets.dataset_dict.keys()),
+        list(k for k in nerf.datasets.dataset_dict.keys()),
         "The type of dataset feed to nerf.",
     )
     flags.DEFINE_enum(
@@ -196,12 +197,12 @@ def define_flags():
     )
     flags.DEFINE_integer(
         "render_every",
-        5000,
+        50,
         "the number of steps to render a test image,"
         "better to be x00 for accurate step time record.",
     )
     flags.DEFINE_integer(
-        "gc_every", 10000, "the number of steps to run python garbage collection."
+        "gc_every", 100, "the number of steps to run python garbage collection."
     )
 
     # Eval Flags

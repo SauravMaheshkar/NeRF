@@ -10,6 +10,7 @@
 .env
 venv/
 data/
+wandb/
 models/
 notebooks/
 

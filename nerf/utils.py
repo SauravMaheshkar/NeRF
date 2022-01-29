@@ -188,12 +188,12 @@ def define_flags():
         "grad_max_val", 0.0, "The gradient clipping value (disabled if == 0)."
     )
 
-    flags.DEFINE_integer("max_steps", 1000000, "the number of optimization steps.")
+    flags.DEFINE_integer("max_steps", 10000, "the number of optimization steps.")
     flags.DEFINE_integer(
-        "save_every", 10000, "the number of steps to save a checkpoint."
+        "save_every", 1000, "the number of steps to save a checkpoint."
     )
     flags.DEFINE_integer(
-        "print_every", 100, "the number of steps between reports to tensorboard."
+        "print_every", 1, "the number of steps between reports to tensorboard."
     )
     flags.DEFINE_integer(
         "render_every",

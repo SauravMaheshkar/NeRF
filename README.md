@@ -32,7 +32,18 @@ sudo docker run --gpus all \
   nerf:latest python3.9 train.py \
   --data_dir=nerf_llff_data/fern \
   --train_dir=logs/fern \
-  --config=configs/llff
+  --config=configs/llff_360
+```
+
+```bash
+sudo docker run --gpus all \
+  -v $PWD:/tmp -w /tmp \
+  -it --env-file .env \
+  nerf:latest python3.9 eval.py \
+  --data_dir=nerf_llff_data/trex \
+  --train_dir=logs/trex \
+  --config=configs/llff_360 \
+  --chunk=4096
 ```
 
 ## Local
@@ -40,11 +51,11 @@ sudo docker run --gpus all \
 The following codebase can be used with Python>=3.8 and is tested on 3.8 and 3.9
 
 ```bash
-python -m pip install --upgrade pip setuptools wheel
+python3 -m pip install --upgrade pip setuptools wheel
 # Make Sure you have Cuda >= 11.1 and cudnn >= 8.2
-python -m pip install jax[cuda11_cudnn82] -f https://storage.googleapis.com/jax-releases/jax_releases.html
+python3 -m pip install jax[cuda11_cudnn82] -f https://storage.googleapis.com/jax-releases/jax_releases.html
 # Other requirements
-python -m pip install --no-cache-dir -r requirements.txt
+python3 -m pip install --no-cache-dir -r requirements.txt
 ```
 
 # Citations

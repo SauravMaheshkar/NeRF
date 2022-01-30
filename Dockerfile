@@ -2,7 +2,7 @@
 FROM tensorflow/tensorflow:latest-gpu
 
 # metainformation
-LABEL org.opencontainers.image.version = "0.0.2"
+LABEL org.opencontainers.image.version = "0.0.3"
 LABEL org.opencontainers.image.authors = "Saurav Maheshkar"
 LABEL org.opencontainers.image.source = "https://github.com/SauravMaheshkar/NeRF"
 LABEL org.opencontainers.image.licenses = "MIT"
@@ -19,6 +19,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 		gcc \
 		gfortran \
 		libopenblas-dev \
+		ffmpeg \
+		libsm6 \
+		libxext6 \
 		python3 \
 		python3.9 \
 		python3-pip \

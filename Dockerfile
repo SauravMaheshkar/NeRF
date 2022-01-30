@@ -31,5 +31,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY . /code
 RUN python3.9 -m pip install --no-cache-dir --upgrade pip setuptools wheel isort
-RUN python3.9 -m pip install jax[cuda11_cudnn82] -f https://storage.googleapis.com/jax-releases/jax_releases.html
+RUN python3.9 -m pip install --use-deprecated=html5lib jax[cuda11_cudnn82] -f https://storage.googleapis.com/jax-releases/jax_releases.html
 RUN python3.9 -m pip install --no-cache-dir -r requirements.txt

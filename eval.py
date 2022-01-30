@@ -26,6 +26,7 @@ from flax.metrics import tensorboard
 from flax.training import checkpoints
 from jax import random
 
+import wandb
 from nerf import datasets, models, utils
 
 FLAGS = flags.FLAGS
@@ -93,7 +94,7 @@ def main(unused_argv):
                 FLAGS.dataset == "llff",
                 chunk=FLAGS.chunk,
             )
-            if jax.host_id() != 0:  # Only record via host 0.
+            if jax.process_index() != 0:  # Only record via host 0.
                 continue
             if not FLAGS.eval_once and idx == showcase_index:
                 showcase_color = pred_color
@@ -113,15 +114,30 @@ def main(unused_argv):
                     pred_disp[Ellipsis, 0],
                     path.join(out_dir, "disp_{:03d}.png".format(idx)),
                 )
-        if (not FLAGS.eval_once) and (jax.host_id() == 0):
+        if (not FLAGS.eval_once) and (jax.process_index() == 0):
+            wandb.log(
+                {"Evaluation/Predicted Color": wandb.Image(np.array(showcase_color))},
+                step=step,
+            )
+            wandb.log(
+                {"Evaluation/Predicted Display": wandb.Image(np.array(showcase_disp))},
+                step=step,
+            )
             summary_writer.image("pred_color", showcase_color, step)
             summary_writer.image("pred_disp", showcase_disp, step)
             summary_writer.image("pred_acc", showcase_acc, step)
             if not FLAGS.render_path:
+                wandb.log(
+                    {"Evaluation/PSNR": np.mean(np.array(psnr_values))}, step=step
+                )
+                wandb.log(
+                    {"Evaluation/SSIM": np.mean(np.array(ssim_values))}, step=step
+                )
                 summary_writer.scalar("psnr", np.mean(np.array(psnr_values)), step)
                 summary_writer.scalar("ssim", np.mean(np.array(ssim_values)), step)
+                wandb.log({"Target": wandb.Image(np.array(showcase_gt))}, step=step)
                 summary_writer.image("target", showcase_gt, step)
-        if FLAGS.save_output and (not FLAGS.render_path) and (jax.host_id() == 0):
+        if FLAGS.save_output and (not FLAGS.render_path) and (jax.process_index() == 0):
             with utils.open_file(path.join(out_dir, f"psnrs_{step}.txt"), "w") as f:
                 f.write(" ".join([str(v) for v in psnr_values]))
             with utils.open_file(path.join(out_dir, f"ssims_{step}.txt"), "w") as f:
@@ -136,6 +152,12 @@ def main(unused_argv):
             break
         last_step = step
 
+    artifact = wandb.Artifact(wandb.run.name + "-predictions", type="Predictions")
+    artifact.add_dir(out_dir)
+    wandb.log_artifact(artifact)
+
 
 if __name__ == "__main__":
+    wandb.init(project="NeRF", job_type="eval")
+    wandb.config.update(flags.FLAGS)
     app.run(main)

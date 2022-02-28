@@ -82,7 +82,7 @@ def train_step(model, rng, state, batch, lr):
                 lambda x, y: x + fn(y), variables, initializer=0
             )
 
-        weight_l2 = tree_sum_fn(lambda z: jnp.sum(z ** 2)) / tree_sum_fn(
+        weight_l2 = tree_sum_fn(lambda z: jnp.sum(z**2)) / tree_sum_fn(
             lambda z: jnp.prod(jnp.array(z.shape))
         )
 
@@ -104,7 +104,7 @@ def train_step(model, rng, state, batch, lr):
     if FLAGS.grad_max_norm > 0:
         grad_norm = jnp.sqrt(
             jax.tree_util.tree_reduce(
-                lambda x, y: x + jnp.sum(y ** 2), grad, initializer=0
+                lambda x, y: x + jnp.sum(y**2), grad, initializer=0
             )
         )
         mult = jnp.minimum(1, FLAGS.grad_max_norm / (1e-7 + grad_norm))

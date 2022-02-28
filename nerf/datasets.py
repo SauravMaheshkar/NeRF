@@ -466,7 +466,7 @@ class LLFF(Dataset):
         rad *= sc
         centroid = np.mean(poses_reset[:, :3, 3], 0)
         zh = centroid[2]
-        radcircle = np.sqrt(rad ** 2 - zh ** 2)
+        radcircle = np.sqrt(rad**2 - zh**2)
         new_poses = []
 
         for th in np.linspace(0.0, 2.0 * np.pi, 120):

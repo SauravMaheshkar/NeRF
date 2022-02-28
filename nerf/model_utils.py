@@ -141,7 +141,7 @@ def posenc(x, min_deg, max_deg, legacy_posenc_order=False):
     """
     if min_deg == max_deg:
         return x
-    scales = jnp.array([2 ** i for i in range(min_deg, max_deg)])
+    scales = jnp.array([2**i for i in range(min_deg, max_deg)])
     if legacy_posenc_order:
         xb = x[Ellipsis, None, :] * scales[:, None]
         four_feat = jnp.reshape(

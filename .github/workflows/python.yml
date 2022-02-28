@@ -28,7 +28,7 @@ jobs:
         uses: psf/black@stable
         with:
           options: "--check --verbose"
-          version: "21.12b0"
+          version: "22.1.0"
 
       - name: Install dependencies
         run: |

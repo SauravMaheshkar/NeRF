@@ -1,10 +1,10 @@
 black==22.1.0
 flake8==4.0.1
-flax==0.3.6
+flax==0.4.0
 opencv-python==4.5.5.62
-Pillow==9.0.0
-pytest==6.2.5
+Pillow==9.0.1
+pytest==7.0.1
 pyyaml==6.0
 tensorboard==2.8.0
-tensorflow==2.7.0
-wandb==0.12.9
+tensorflow==2.8.0
+wandb==0.12.10

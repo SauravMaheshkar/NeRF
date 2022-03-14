@@ -1,5 +1,5 @@
 paths:
-  - src
+  - nerf
 paths-ignore:
   - 'tests/**'
   - 'example_data/**'

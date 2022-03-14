@@ -2,3 +2,4 @@ paths:
   - src
 paths-ignore:
   - 'tests/**'
+  - 'example_data/**'

@@ -14,6 +14,7 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /code
 
 # Essential Installs
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A4B469963BF863CC
 RUN apt-get update && apt-get install -y --no-install-recommends \
 		build-essential \
 		gcc \

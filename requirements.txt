@@ -1,4 +1,4 @@
-black==22.3.0
+black==22.6.0
 flake8==4.0.1
 flax==0.5.2
 opencv-python==4.6.0.66
